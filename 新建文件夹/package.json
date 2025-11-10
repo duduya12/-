@@ -1,0 +1,18 @@
+{
+  "name": "dodo-oneclick-full",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test",
+    "lint": "npx hardhat run scripts/lint.js || true",
+    "build-frontend": "cd frontend && npm install && npm run build"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^2.0.0",
+    "hardhat": "^2.17.0",
+    "ethers": "^5.7.2",
+    "@openzeppelin/contracts": "^4.9.3"
+  },
+  "dependencies": {}
+}

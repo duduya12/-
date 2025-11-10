@@ -1,0 +1,54 @@
+name: CI - Compile Test Build Deploy
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm install
+      - name: Compile (Hardhat)
+        run: npx hardhat compile
+      - name: Run tests (Hardhat)
+        run: npx hardhat test
+      - name: Run Foundry tests (if available)
+        run: |
+          if command -v forge >/dev/null 2>&1; then
+            forge test -v
+          else
+            echo "forge not installed; skipping"
+          fi
+      - name: Build frontend
+        run: npm run build-frontend
+      - name: Deploy frontend to Vercel (optional)
+        if: secrets.VERCEL_TOKEN != ''
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          echo "Deploying to Vercel"
+          npm install -g vercel@28
+          vercel --token $VERCEL_TOKEN --org $VERCEL_ORG_ID --confirm --prod
+      - name: Optional on-chain deploy (TokenFactory)
+        if: secrets.PRIVATE_KEY != '' && (secrets.SEPOLIA_RPC != '' || secrets.BSC_TESTNET_RPC != '')
+        env:
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+          SEPOLIA_RPC: ${{ secrets.SEPOLIA_RPC }}
+          BSC_TESTNET_RPC: ${{ secrets.BSC_TESTNET_RPC }}
+          ARB_SEPOLIA_RPC: ${{ secrets.ARB_SEPOLIA_RPC }}
+        run: |
+          echo "Deploying TokenFactory to configured networks (if RPC provided)"
+          node scripts/deployFactory.js --network sepolia || true
+          node scripts/deployFactory.js --network bscTestnet || true
+          node scripts/deployFactory.js --network arbitrumSepolia || true
